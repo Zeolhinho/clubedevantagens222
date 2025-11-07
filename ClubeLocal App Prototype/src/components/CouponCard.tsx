@@ -13,6 +13,15 @@ interface CouponCardProps {
 }
 
 export function CouponCard({ coupon, isFavorite, onToggleFavorite, onUseCoupon }: CouponCardProps) {
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir propagação do evento
+    onToggleFavorite(coupon.id);
+  };
+
+  const handleUseCoupon = () => {
+    onUseCoupon(coupon);
+  };
+
   return (
     <Card className="overflow-hidden bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-all group">
       <div className="relative h-40">
@@ -23,7 +32,7 @@ export function CouponCard({ coupon, isFavorite, onToggleFavorite, onUseCoupon }
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
         <button
-          onClick={() => onToggleFavorite(coupon.id)}
+          onClick={handleToggleFavorite}
           className="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-900/80 backdrop-blur flex items-center justify-center transition-all hover:scale-110"
         >
           <Heart 
@@ -47,7 +56,7 @@ export function CouponCard({ coupon, isFavorite, onToggleFavorite, onUseCoupon }
         </div>
         <Button 
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-          onClick={() => onUseCoupon(coupon)}
+          onClick={handleUseCoupon}
         >
           <Ticket className="w-4 h-4 mr-2" />
           Usar Cupom

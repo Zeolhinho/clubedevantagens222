@@ -1,31 +1,66 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
-import { Gift, ArrowLeft } from 'lucide-react';
-import { UserRole } from '../App';
+import { Gift, ArrowLeft, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { loginSchema, signupSchema, LoginFormData, SignupFormData } from '../schemas/authSchemas';
 
 interface LoginPageProps {
   isSignup: boolean;
-  onLogin: (role: UserRole) => void;
-  onBack: () => void;
 }
 
-export function LoginPage({ isSignup, onLogin, onBack }: LoginPageProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+export function LoginPage({ isSignup }: LoginPageProps) {
+  const navigate = useNavigate();
+  const { login, signup, isLoading, user, isAuthenticated } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulação de login baseado no email
-    if (email.includes('admin')) {
-      onLogin('admin');
-    } else if (email.includes('empresa') || email.includes('business')) {
-      onLogin('business');
-    } else {
-      onLogin('user');
+  // Redirecionar se já estiver logado
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') navigate('/admin', { replace: true });
+    else if (user.role === 'business') navigate('/business', { replace: true });
+    else navigate('/dashboard', { replace: true });
+  }
+
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const signupForm = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  const handleLogin = async (data: LoginFormData) => {
+    try {
+      await login(data.email, data.password);
+      // Toast e navegação são tratados pelo AuthContext
+    } catch (error) {
+      // Erro já é tratado pelo AuthContext com toast
+      console.error('Erro no login:', error);
+    }
+  };
+
+  const handleSignup = async (data: SignupFormData) => {
+    try {
+      await signup(data.name, data.email, data.password);
+      // Toast e navegação são tratados pelo AuthContext
+    } catch (error) {
+      // Erro já é tratado pelo AuthContext com toast
+      console.error('Erro no signup:', error);
     }
   };
 
@@ -35,7 +70,7 @@ export function LoginPage({ isSignup, onLogin, onBack }: LoginPageProps) {
         <Button 
           variant="ghost" 
           className="text-slate-200 hover:text-white mb-6"
-          onClick={onBack}
+          onClick={() => navigate('/')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
@@ -56,63 +91,117 @@ export function LoginPage({ isSignup, onLogin, onBack }: LoginPageProps) {
             {isSignup ? 'Comece a economizar hoje' : 'Entre para acessar seus cupons'}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignup && (
+          {isSignup ? (
+            <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-slate-200">Nome completo</Label>
                 <Input
                   id="name"
                   type="text"
                   placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...signupForm.register('name')}
                   className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
-                  required
                 />
+                {signupForm.formState.errors.name && (
+                  <p className="text-red-400 text-sm">{signupForm.formState.errors.name.message}</p>
+                )}
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-200">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-200">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...signupForm.register('email')}
+                  className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+                {signupForm.formState.errors.email && (
+                  <p className="text-red-400 text-sm">{signupForm.formState.errors.email.message}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-200">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-200">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...signupForm.register('password')}
+                  className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+                {signupForm.formState.errors.password && (
+                  <p className="text-red-400 text-sm">{signupForm.formState.errors.password.message}</p>
+                )}
+              </div>
 
-            {!isSignup && (
+              <Button 
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando conta...
+                  </>
+                ) : (
+                  'Criar conta'
+                )}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-200">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...loginForm.register('email')}
+                  className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-red-400 text-sm">{loginForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-200">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...loginForm.register('password')}
+                  className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500"
+                />
+                {loginForm.formState.errors.password && (
+                  <p className="text-red-400 text-sm">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
+
               <div className="text-right">
-                <a href="#" className="text-blue-400 hover:text-blue-300">
+                <a href="#" className="text-blue-400 hover:text-blue-300 text-sm">
                   Esqueceu sua senha?
                 </a>
               </div>
-            )}
 
-            <Button 
-              type="submit"
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-            >
-              {isSignup ? 'Criar conta' : 'Entrar'}
-            </Button>
-          </form>
+              <Button 
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+          )}
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

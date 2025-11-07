@@ -10,6 +10,7 @@ export interface Coupon {
   code: string;
   status?: 'active' | 'paused' | 'pending';
   usageCount?: number;
+  companyId?: string; // ID da empresa (para favoritos)
 }
 
 export const mockCoupons: Coupon[] = [

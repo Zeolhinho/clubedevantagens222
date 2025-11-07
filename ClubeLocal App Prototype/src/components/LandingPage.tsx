@@ -1,13 +1,19 @@
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Utensils, Sparkles, Car, ShoppingBag, Heart, Scissors, Coffee, Gift, ArrowRight, Check } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface LandingPageProps {
-  onLogin: () => void;
-  onSignup: () => void;
-}
+export function LandingPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
-export function LandingPage({ onLogin, onSignup }: LandingPageProps) {
+  // Redirecionar se já estiver logado
+  if (isAuthenticated && user) {
+    if (user.role === 'admin') navigate('/admin');
+    else if (user.role === 'business') navigate('/business');
+    else navigate('/dashboard');
+  }
   const categories = [
     { icon: Utensils, label: 'Alimentação', color: 'text-orange-500' },
     { icon: Scissors, label: 'Beleza', color: 'text-pink-500' },
@@ -42,12 +48,12 @@ export function LandingPage({ onLogin, onSignup }: LandingPageProps) {
             <span className="text-white text-xl">ClubeLocal</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-slate-200 hover:text-white" onClick={onLogin}>
+            <Button variant="ghost" className="text-slate-200 hover:text-white" onClick={() => navigate('/login')}>
               Entrar
             </Button>
             <Button 
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-              onClick={onSignup}
+              onClick={() => navigate('/signup')}
             >
               Assinar Agora
             </Button>
@@ -73,7 +79,7 @@ export function LandingPage({ onLogin, onSignup }: LandingPageProps) {
         <Button 
           size="lg"
           className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-lg px-8 py-6 h-auto"
-          onClick={onSignup}
+          onClick={() => navigate('/signup')}
         >
           Assine por R$29,90/mês
           <ArrowRight className="w-5 h-5 ml-2" />
@@ -142,7 +148,7 @@ export function LandingPage({ onLogin, onSignup }: LandingPageProps) {
             <Button 
               size="lg"
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8"
-              onClick={onSignup}
+              onClick={() => navigate('/signup')}
             >
               Começar Agora
             </Button>
